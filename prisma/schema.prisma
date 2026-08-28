@@ -1,0 +1,222 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Merchant {
+  id         String   @id @default(uuid())
+  name       String
+  industry   String?
+  createdAt  DateTime @default(now())
+
+  runs       ReconciliationRun[]
+  rules      ReconciliationRule[]
+  aliases    EntityAlias[]
+}
+
+model ReconciliationRun {
+  id                    String   @id @default(uuid())
+  merchantId            String
+  status                String   // "STARTED", "COMPLETED", "FAILED"
+  sourceCount           Int      @default(0)
+  recordCount           Int      @default(0)
+  matchedCount          Int      @default(0)
+  reviewCount           Int      @default(0)
+  unresolvedCount       Int      @default(0)
+  startedAt             DateTime @default(now())
+  completedAt           DateTime?
+  durationMs            Int?
+  
+  // Evaluation metrics (Populated after run if it has ground truth)
+  precision             Float?
+  recall                Float?
+  f1Score               Float?
+  autoResolutionRate    Float?
+
+  merchant              Merchant @relation(fields: [merchantId], references: [id])
+  
+  sourceRecords         SourceRecord[]
+  matchCandidates       MatchCandidate[]
+  decisions             ReconciliationDecision[]
+  exceptions            Exception[]
+  auditEvents           AuditEvent[]
+  evaluationCases       EvaluationCase[]
+}
+
+model SourceRecord {
+  id                  String   @id @default(uuid())
+  runId               String
+  sourceType          String   // "PAYMENT", "INVOICE", "SETTLEMENT", "BANK_TRANSACTION", "REFUND"
+  externalId          String
+  recordDate          DateTime
+  amount              Int      // Stored in minor currency units (e.g. paise)
+  currency            String   @default("INR")
+  counterpartyName    String?
+  reference           String?
+  description         String?
+  status              String   @default("PENDING") // "PENDING", "RECONCILED", "EXCEPTION"
+  rawPayload          String   // JSON string
+  createdAt           DateTime @default(now())
+
+  run                 ReconciliationRun @relation(fields: [runId], references: [id])
+  
+  normalizedRecord    NormalizedRecord?
+  candidatesSource    MatchCandidate[] @relation("SourceCandidate")
+  candidatesTarget    MatchCandidate[] @relation("TargetCandidate")
+  decisionsSource     ReconciliationDecision[] @relation("DecisionSource")
+  decisionsTarget     ReconciliationDecision[] @relation("DecisionTarget")
+  exceptions          Exception[]
+  evaluationCases     EvaluationCase[]
+}
+
+model NormalizedRecord {
+  id                      String   @id @default(uuid())
+  sourceRecordId          String   @unique
+  normalizedExternalId    String?
+  normalizedCounterparty  String?
+  normalizedReference     String?
+  normalizedDate          DateTime?
+  amountMinor             Int
+  currency                String   @default("INR")
+  canonicalText           String?
+  normalizationMetadata   String?  // JSON
+
+  sourceRecord            SourceRecord @relation(fields: [sourceRecordId], references: [id])
+}
+
+model MatchCandidate {
+  id                  String   @id @default(uuid())
+  runId               String
+  sourceRecordId      String
+  candidateRecordId   String
+  amountScore         Float
+  dateScore           Float
+  referenceScore      Float
+  entityScore         Float
+  semanticScore       Float
+  contradictionScore  Float
+  overallScore        Float
+  rank                Int
+
+  run                 ReconciliationRun @relation(fields: [runId], references: [id])
+  sourceRecord        SourceRecord      @relation("SourceCandidate", fields: [sourceRecordId], references: [id])
+  candidateRecord     SourceRecord      @relation("TargetCandidate", fields: [candidateRecordId], references: [id])
+}
+
+model ReconciliationDecision {
+  id                  String   @id @default(uuid())
+  runId               String
+  sourceRecordId      String
+  matchedRecordId     String?
+  decision            String   // "AUTO_RECONCILED", "REVIEW_REQUIRED", "UNRESOLVED", "REJECTED"
+  confidence          Float
+  rootCause           String?
+  decisionReason      String?
+  evidenceJson        String?  // JSON array
+  contradictionsJson  String?  // JSON array
+  policyResult        String?
+  agentUsed           Boolean  @default(false)
+  createdAt           DateTime @default(now())
+
+  run                 ReconciliationRun @relation(fields: [runId], references: [id])
+  sourceRecord        SourceRecord      @relation("DecisionSource", fields: [sourceRecordId], references: [id])
+  matchedRecord       SourceRecord?     @relation("DecisionTarget", fields: [matchedRecordId], references: [id])
+}
+
+model Exception {
+  id                  String   @id @default(uuid())
+  runId               String
+  sourceRecordId      String
+  severity            String   // "HIGH", "MEDIUM", "LOW"
+  category            String   // "AMOUNT_VARIANCE", "REFERENCE_CONFLICT", etc.
+  title               String
+  description         String
+  recommendedAction   String?
+  status              String   @default("OPEN") // "OPEN", "RESOLVED"
+  assignedTo          String?
+  createdAt           DateTime @default(now())
+  resolvedAt          DateTime?
+
+  run                 ReconciliationRun @relation(fields: [runId], references: [id])
+  sourceRecord        SourceRecord      @relation(fields: [sourceRecordId], references: [id])
+  agentRuns           AgentRun[]
+}
+
+model AuditEvent {
+  id                  String   @id @default(uuid())
+  runId               String
+  entityType          String   // "RECORD", "EXCEPTION", "RULE"
+  entityId            String
+  eventType           String
+  actorType           String   // "SYSTEM", "AGENT", "HUMAN"
+  action              String
+  beforeState         String?  // JSON
+  afterState          String?  // JSON
+  reason              String?
+  metadata            String?  // JSON
+  createdAt           DateTime @default(now())
+
+  run                 ReconciliationRun @relation(fields: [runId], references: [id])
+}
+
+model ReconciliationRule {
+  id                  String   @id @default(uuid())
+  merchantId          String
+  name                String
+  ruleType            String
+  ruleDefinition      String   // JSON
+  source              String
+  confidence          Float
+  approvalStatus      String   // "PENDING", "APPROVED", "REJECTED"
+  timesTriggered      Int      @default(0)
+  successfulUses      Int      @default(0)
+  createdAt           DateTime @default(now())
+
+  merchant            Merchant @relation(fields: [merchantId], references: [id])
+}
+
+model EntityAlias {
+  id                  String   @id @default(uuid())
+  merchantId          String
+  canonicalEntity     String
+  alias               String
+  confidence          Float
+  source              String
+  approved            Boolean  @default(false)
+  createdAt           DateTime @default(now())
+
+  merchant            Merchant @relation(fields: [merchantId], references: [id])
+}
+
+model EvaluationCase {
+  id                      String   @id @default(uuid())
+  runId                   String
+  sourceRecordId          String
+  groundTruthDecision     String   // "MATCH", "UNRESOLVED"
+  groundTruthMatchId      String?
+  groundTruthRootCause    String?
+  datasetSplit            String   // "development", "held_out"
+
+  run                 ReconciliationRun @relation(fields: [runId], references: [id])
+  sourceRecord        SourceRecord      @relation(fields: [sourceRecordId], references: [id])
+}
+
+model AgentRun {
+  id                  String   @id @default(uuid())
+  exceptionId         String
+  provider            String
+  model               String
+  startedAt           DateTime @default(now())
+  completedAt         DateTime?
+  status              String   // "RUNNING", "SUCCESS", "FAILED"
+  inputTokens         Int      @default(0)
+  outputTokens        Int      @default(0)
+  toolCalls           String?  // JSON
+
+  exception           Exception @relation(fields: [exceptionId], references: [id])
+}

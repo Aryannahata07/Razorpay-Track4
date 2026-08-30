@@ -52,17 +52,20 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Finance Controller</h1>
-          <p className="text-zinc-500">Reconciliation Overview & Metrics</p>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-[#02042B] text-white p-8 rounded-xl shadow-lg relative overflow-hidden">
+        {/* Subtle background glow effect */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-[#3395FF] opacity-20 blur-3xl"></div>
+        
+        <div className="relative z-10">
+          <h1 className="text-4xl font-bold tracking-tight mb-2">Finance Controller</h1>
+          <p className="text-blue-200">Reconciliation Overview & Metrics</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleSeed} disabled={seeding || running}>
+        <div className="flex items-center gap-3 relative z-10">
+          <Button variant="secondary" onClick={handleSeed} disabled={seeding} className="bg-white/10 text-white hover:bg-white/20 border-0">
             <Database className="mr-2 h-4 w-4" />
             {seeding ? "Generating..." : "Generate Test Data"}
           </Button>
-          <Button onClick={handleRunReconciliation} disabled={running || seeding || !runData?.run || runData?.run?.status === "COMPLETED"}>
+          <Button onClick={handleRunReconciliation} disabled={running || !runData?.run} className="bg-[#3395FF] hover:bg-[#2b80e0] text-white shadow-md shadow-[#3395FF]/20">
             <Play className="mr-2 h-4 w-4" />
             {running ? "Processing..." : "Run Reconciliation"}
           </Button>

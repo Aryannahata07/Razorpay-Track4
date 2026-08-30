@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UploadCloud, FileText, CheckCircle, AlertTriangle } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle, AlertTriangle, Database } from "lucide-react";
 
 export default function SourcesPage() {
   const [uploading, setUploading] = useState(false);

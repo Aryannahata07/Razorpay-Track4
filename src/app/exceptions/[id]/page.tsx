@@ -177,19 +177,36 @@ export default function ExceptionDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
+          <Card className="border-[#3395FF]/20 shadow-md">
+            <CardHeader className="bg-[#02042B] text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Bot className="h-5 w-5 text-[#3395FF]" />
                 AI Investigation
               </CardTitle>
-              <CardDescription>Let the Controller agent analyze this ambiguity.</CardDescription>
+              <CardDescription className="text-blue-200">Let the Controller agent analyze this ambiguity.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               {!aiDecision ? (
-                <Button onClick={handleInvestigate} disabled={investigating}>
-                  {investigating ? "Agent is investigating..." : "Trigger AI Investigation"}
-                </Button>
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="mb-4 text-center max-w-sm text-zinc-500 text-sm">
+                    The deterministic engine found ambiguity. Trigger the AI agent to deeply analyze the evidence, contradictions, and suggest rules.
+                  </div>
+                  <Button 
+                    onClick={handleInvestigate} 
+                    disabled={investigating}
+                    className="bg-[#3395FF] hover:bg-[#2b80e0] text-white shadow-lg shadow-[#3395FF]/20 transition-all hover:scale-105"
+                  >
+                    {investigating ? (
+                      <span className="flex items-center gap-2 animate-pulse">
+                        <Bot className="h-4 w-4 animate-bounce" /> Analyzing Evidence...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Bot className="h-4 w-4" /> Trigger AI Investigation
+                      </span>
+                    )}
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex gap-4 items-center">

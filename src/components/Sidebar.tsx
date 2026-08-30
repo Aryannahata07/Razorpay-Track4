@@ -18,11 +18,11 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="w-64 border-r bg-zinc-50/50 hidden md:block">
+    <div className="w-64 border-r bg-zinc-50/50 hidden md:flex flex-col">
       <div className="flex h-14 items-center border-b px-6">
         <span className="font-semibold text-lg tracking-tight">AI Finance Controller</span>
       </div>
-      <nav className="flex flex-col gap-1 p-4">
+      <nav className="flex flex-col gap-1 p-4 flex-1">
         {routes.map((route) => (
           <Link
             key={route.href}
@@ -39,6 +39,19 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
+      <div className="p-4 border-t">
+        <button 
+          onClick={async () => {
+            if (confirm("Are you sure you want to reset the demo? This will wipe the database.")) {
+              await fetch("/api/demo/reset", { method: "POST" });
+              window.location.href = "/";
+            }
+          }}
+          className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+        >
+          Reset Demo State
+        </button>
+      </div>
     </div>
   );
 }

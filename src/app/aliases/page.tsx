@@ -27,9 +27,9 @@ export default async function AliasesPage() {
               {aliases.map(alias => (
                 <div key={alias.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-4 text-sm font-mono">
-                    <span className="text-red-700 bg-red-50 px-2 py-1 rounded">"{alias.sourceName}"</span>
+                    <span className="text-red-700 bg-red-50 px-2 py-1 rounded">"{alias.alias}"</span>
                     <span className="text-zinc-400">→</span>
-                    <span className="text-green-700 bg-green-50 px-2 py-1 rounded">"{alias.normalizedName}"</span>
+                    <span className="text-green-700 bg-green-50 px-2 py-1 rounded">"{alias.canonicalEntity}"</span>
                   </div>
                   <div className="flex items-center gap-4">
                     <Badge variant={alias.source === "HUMAN_APPROVED" ? "default" : "secondary"}>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -78,9 +78,9 @@ export default function ExceptionsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button render={<Link href={`/exceptions/${exc.id}`} />} variant="outline" size="sm">
+                        <Link href={`/exceptions/${exc.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
                           Investigate
-                        </Button>
+                        </Link>
                       </TableCell>
                     </TableRow>
                   ))

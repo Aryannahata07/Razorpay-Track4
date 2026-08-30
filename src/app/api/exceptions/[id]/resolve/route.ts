@@ -24,34 +24,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     await prisma.auditEvent.create({
       data: {
         runId: exception.sourceRecord.runId,
-        recordId: exception.sourceRecordId,
+        entityType: "EXCEPTION",
+        entityId: id,
         eventType: "HUMAN_OVERRIDE",
-        description: `Human resolved exception ${id} as ${resolution}`,
-        actor: "HumanController"
+        actorType: "HUMAN",
+        action: resolution,
+        reason: "Human reviewed AI investigation and approved",
+        metadata: JSON.stringify({ suggestedAlias })
       }
     });
 
     // 3. Create Alias Rule if passed
     if (suggestedAlias) {
-      // Upsert the alias so we don't crash on duplicates
-      await prisma.entityAlias.upsert({
-        where: {
-          merchantId_sourceName: {
-            merchantId: exception.merchantId,
-            sourceName: suggestedAlias.sourceName
-          }
-        },
-        update: {
-          normalizedName: suggestedAlias.normalizedName,
+      // Create the alias rule
+      await prisma.entityAlias.create({
+        data: {
+          merchantId: exception.sourceRecord.merchantId,
+          alias: suggestedAlias.sourceName,
+          canonicalEntity: suggestedAlias.normalizedName,
           confidence: 1.0,
-          source: "HUMAN_APPROVED"
-        },
-        create: {
-          merchantId: exception.merchantId,
-          sourceName: suggestedAlias.sourceName,
-          normalizedName: suggestedAlias.normalizedName,
-          confidence: 1.0,
-          source: "HUMAN_APPROVED"
+          source: "HUMAN_APPROVED",
+          approved: true
         }
       });
     }

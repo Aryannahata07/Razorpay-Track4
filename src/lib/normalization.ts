@@ -50,7 +50,7 @@ export async function processNormalization(records: SourceRecord[], merchantId?:
     });
     // Build a map of lowercase raw name -> normalized name
     for (const a of dbAliases) {
-      aliases[a.sourceName.toLowerCase()] = a.normalizedName.toLowerCase();
+      aliases[a.alias.toLowerCase()] = a.canonicalEntity.toLowerCase();
     }
   }
 

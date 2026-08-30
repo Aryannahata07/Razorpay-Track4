@@ -68,7 +68,14 @@ export default function ExceptionsPage() {
                       </TableCell>
                       <TableCell className="font-medium">{exc.sourceRecord?.externalId}</TableCell>
                       <TableCell>₹{(exc.sourceRecord?.amount / 100).toFixed(2)}</TableCell>
-                      <TableCell>{exc.category}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {exc.category}
+                          {exc.category === "ENTITY_AMBIGUITY" && exc.status === "OPEN" && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1 py-0 h-4">Demo Target</Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={
                           exc.severity === "HIGH" ? "text-red-600 border-red-200 bg-red-50" : 

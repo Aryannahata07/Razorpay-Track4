@@ -283,11 +283,23 @@ export default function ExceptionDetailPage() {
               )}
             </CardContent>
             {aiDecision && exception.status === "OPEN" && (
-               <CardFooter className="flex gap-3 justify-end border-t pt-4">
-                  <Button variant="outline">Mark Unresolved</Button>
-                  <Button variant="default" onClick={handleApproveMatch}>
-                    {aiDecision.suggestedAlias ? "Approve Match & Rule" : "Approve Match"}
-                  </Button>
+               <CardFooter className="flex flex-col gap-4 border-t pt-6 bg-zinc-50 rounded-b-lg">
+                  {aiDecision.suggestedAlias ? (
+                    <div className="w-full text-sm text-blue-700 bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm">
+                      <strong className="flex items-center gap-1 mb-1"><Bot className="w-4 h-4" /> Demo Tip: What happens next?</strong>
+                      By clicking <strong>Approve Match & Save Rule</strong>, you aren't just resolving this one exception. You are permanently teaching the Deterministic Engine that <em>"{aiDecision.suggestedAlias.sourceName}"</em> means <em>"{aiDecision.suggestedAlias.normalizedName}"</em>. The next time you click "Run Reconciliation", this will be auto-reconciled instantly!
+                    </div>
+                  ) : (
+                    <div className="w-full text-sm text-zinc-600 bg-white border p-3 rounded-lg">
+                      <strong>Note:</strong> The AI determined this was a one-off mismatch (not an entity alias), so no rule is suggested. You are just approving this single match.
+                    </div>
+                  )}
+                  <div className="flex gap-3 justify-end w-full">
+                    <Button variant="outline">Keep Unresolved</Button>
+                    <Button variant="default" onClick={handleApproveMatch} className="bg-[#3395FF] hover:bg-[#2b80e0]">
+                      {aiDecision.suggestedAlias ? "Approve Match & Save Rule to Memory" : "Approve Match Only"}
+                    </Button>
+                  </div>
                </CardFooter>
             )}
           </Card>

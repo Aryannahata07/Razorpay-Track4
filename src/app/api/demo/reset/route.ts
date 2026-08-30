@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     await prisma.sourceRecord.deleteMany({});
     await prisma.entityAlias.deleteMany({});
     await prisma.reconciliationRun.deleteMany({});
-    await prisma.rule.deleteMany({});
+    await prisma.reconciliationRule.deleteMany({});
     await prisma.merchant.deleteMany({});
 
     return NextResponse.json({ success: true, message: "Database wiped clean for demo" });

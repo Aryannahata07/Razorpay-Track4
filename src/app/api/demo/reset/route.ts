@@ -11,8 +11,8 @@ export async function POST(request: Request) {
     await prisma.evaluationCase.deleteMany({});
     await prisma.reconciliationDecision.deleteMany({});
     await prisma.matchCandidate.deleteMany({});
-    await prisma.exception.deleteMany({});
     await prisma.agentRun.deleteMany({});
+    await prisma.exception.deleteMany({});
     await prisma.normalizedRecord.deleteMany({});
     await prisma.sourceRecord.deleteMany({});
     await prisma.entityAlias.deleteMany({});

@@ -9,7 +9,7 @@ const routes = [
   { href: "/", label: "Overview", icon: BarChart2 },
   { href: "/exceptions", label: "Exceptions", icon: AlertCircle },
   { href: "/transactions", label: "Transactions", icon: Activity },
-  { href: "/rules", label: "Rules & Memory", icon: CheckCircle },
+  { href: "/aliases", label: "Rule Memory", icon: CheckCircle },
   { href: "/sources", label: "Data Sources", icon: Database },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

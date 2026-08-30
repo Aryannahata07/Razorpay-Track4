@@ -1,16 +1,20 @@
-import { PrismaClient, SourceRecord } from "@prisma/client";
+import type { SourceRecord } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
 import { processNormalization } from "./normalization";
 
-const prisma = new PrismaClient();
-
 export async function runDeterministicReconciliation(runId: string) {
+  const run = await prisma.reconciliationRun.findUnique({
+    where: { id: runId },
+    select: { merchantId: true }
+  });
+  
   // 1. Fetch pending records
   const records = await prisma.sourceRecord.findMany({
     where: { runId, status: "PENDING" }
   });
 
   // 2. Normalize and save to DB
-  const normalizedRecordsData = await processNormalization(records);
+  const normalizedRecordsData = await processNormalization(records, run?.merchantId);
   for (const norm of normalizedRecordsData) {
     await prisma.normalizedRecord.upsert({
       where: { sourceRecordId: norm.sourceRecordId },

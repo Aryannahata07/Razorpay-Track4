@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { runDeterministicReconciliation } from "@/lib/reconciliation";
 import { runPolicyEngine } from "@/lib/policy";
 import { evaluateRun } from "@/lib/evaluation";
-
-const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
@@ -40,7 +38,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const runs = await prisma.reconciliationRun.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { startedAt: "desc" },
       take: 1
     });
 
@@ -54,6 +52,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ run, metrics });
   } catch (error) {
+    console.error("GET /api/run error:", error);
     return NextResponse.json({ error: "Failed to fetch run" }, { status: 500 });
   }
 }

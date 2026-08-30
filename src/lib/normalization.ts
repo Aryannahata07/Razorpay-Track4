@@ -1,4 +1,5 @@
-import { SourceRecord } from "@prisma/client";
+import type { SourceRecord } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
 
 export function normalizeEntityName(name: string | null): string | null {
   if (!name) return null;
@@ -40,16 +41,33 @@ export function normalizeDate(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-export async function processNormalization(records: SourceRecord[]) {
-  // In a real system, we'd use Prisma to update the DB here.
-  // For the deterministic engine, we can just return normalized objects.
-  return records.map(record => ({
-    sourceRecordId: record.id,
-    normalizedExternalId: normalizeReference(record.externalId),
-    normalizedCounterparty: normalizeEntityName(record.counterpartyName),
-    normalizedReference: normalizeReference(record.reference),
-    normalizedDate: normalizeDate(record.recordDate),
-    amountMinor: record.amount,
-    currency: record.currency,
-  }));
+export async function processNormalization(records: SourceRecord[], merchantId?: string) {
+  let aliases: Record<string, string> = {};
+  
+  if (merchantId) {
+    const dbAliases = await prisma.entityAlias.findMany({
+      where: { merchantId }
+    });
+    // Build a map of lowercase raw name -> normalized name
+    for (const a of dbAliases) {
+      aliases[a.sourceName.toLowerCase()] = a.normalizedName.toLowerCase();
+    }
+  }
+
+  return records.map(record => {
+    let cpName = record.counterpartyName;
+    if (cpName && aliases[cpName.toLowerCase()]) {
+       cpName = aliases[cpName.toLowerCase()];
+    }
+
+    return {
+      sourceRecordId: record.id,
+      normalizedExternalId: normalizeReference(record.externalId),
+      normalizedCounterparty: normalizeEntityName(cpName),
+      normalizedReference: normalizeReference(record.reference),
+      normalizedDate: normalizeDate(record.recordDate),
+      amountMinor: record.amount,
+      currency: record.currency,
+    };
+  });
 }

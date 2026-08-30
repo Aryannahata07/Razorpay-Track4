@@ -40,6 +40,27 @@ export default function ExceptionDetailPage() {
     setInvestigating(false);
   };
 
+  const handleApproveMatch = async () => {
+    try {
+      const res = await fetch(`/api/exceptions/${params.id}/resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resolution: "APPROVED_MATCH",
+          suggestedAlias: aiDecision?.suggestedAlias || null
+        })
+      });
+      if (res.ok) {
+        alert("Match approved and exception resolved!");
+        router.push("/exceptions");
+      } else {
+        alert("Failed to resolve exception");
+      }
+    } catch (e) {
+      alert("Error resolving exception");
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (!exception) return <div>Exception not found.</div>;
 
@@ -225,13 +246,31 @@ export default function ExceptionDetailPage() {
                       </ul>
                     </div>
                   )}
+
+                  {aiDecision.suggestedAlias && (
+                    <div className="mt-4 p-4 border rounded-lg bg-blue-50/50">
+                      <h4 className="font-semibold text-sm flex items-center gap-2 text-blue-900">
+                        <Check className="h-4 w-4" /> AI Suggested Rule
+                      </h4>
+                      <p className="text-sm text-blue-800 mt-1">
+                        The agent suggests learning the following entity alias mapping:
+                      </p>
+                      <div className="flex items-center gap-3 mt-3 text-sm font-mono bg-white p-2 border rounded">
+                        <span className="text-red-700">"{aiDecision.suggestedAlias.sourceName}"</span>
+                        <span>→</span>
+                        <span className="text-green-700">"{aiDecision.suggestedAlias.normalizedName}"</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
             {aiDecision && exception.status === "OPEN" && (
                <CardFooter className="flex gap-3 justify-end border-t pt-4">
                   <Button variant="outline">Mark Unresolved</Button>
-                  <Button variant="default">Approve Match</Button>
+                  <Button variant="default" onClick={handleApproveMatch}>
+                    {aiDecision.suggestedAlias ? "Approve Match & Rule" : "Approve Match"}
+                  </Button>
                </CardFooter>
             )}
           </Card>

@@ -31,7 +31,11 @@ export const AgentDecisionSchema = z.object({
   confidence: z.number().min(0).max(1).describe("Confidence score from 0 to 1"),
   evidence: z.array(z.string()).describe("A list of factual evidence points supporting the recommendation"),
   contradictions: z.array(z.string()).describe("A list of factual points that contradict the recommendation or highlight ambiguity"),
-  additionalInformationRequired: z.array(z.string()).describe("List of missing information that would help make a better decision (e.g., 'Verify remittance advice')")
+  additionalInformationRequired: z.array(z.string()).describe("List of missing information that would help make a better decision (e.g., 'Verify remittance advice')"),
+  suggestedAlias: z.object({
+    sourceName: z.string().describe("The raw entity name found in the source record"),
+    normalizedName: z.string().describe("The canonical/expected entity name it should map to")
+  }).optional().describe("If the root cause is ENTITY_AMBIGUITY, suggest an alias mapping rule for future runs")
 });
 
 export type AgentDecision = z.infer<typeof AgentDecisionSchema>;

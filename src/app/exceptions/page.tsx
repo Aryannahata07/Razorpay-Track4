@@ -78,8 +78,8 @@ export default function ExceptionsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/exceptions/${exc.id}`}>Investigate</Link>
+                        <Button render={<Link href={`/exceptions/${exc.id}`} />} variant="outline" size="sm">
+                          Investigate
                         </Button>
                       </TableCell>
                     </TableRow>

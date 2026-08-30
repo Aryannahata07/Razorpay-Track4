@@ -2,9 +2,7 @@ import { generateObject } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { AgentDecisionSchema, AgentDecision } from "./schema";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export function getAIModel() {
   const provider = process.env.LLM_PROVIDER || "groq";
@@ -96,6 +94,10 @@ export async function investigateException(exceptionId: string): Promise<AgentDe
       Determine if this should be AUTO_RECONCILED (only if evidence is overwhelming and no contradictions exist),
       REVIEW_REQUIRED (if it's a likely match but needs human confirmation due to ambiguity),
       or UNRESOLVED (if evidence is weak).
+
+      If the discrepancy is due to ENTITY_AMBIGUITY (e.g. "Razorpay Software Pvt Ltd" vs "RZP"), 
+      and you believe they are the same entity, you MUST provide a \`suggestedAlias\` mapping 
+      the \`sourceName\` (raw name) to the \`normalizedName\` (the canonical name).
     `;
 
     const { object } = await generateObject({

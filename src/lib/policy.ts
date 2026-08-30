@@ -48,9 +48,20 @@ export async function runPolicyEngine(runId: string) {
     if (topCandidate.overallScore >= POLICY_THRESHOLDS.AUTO_RECONCILE) {
       await recordDecision(runId, record.id, topCandidate.candidateRecordId, "AUTO_RECONCILED", topCandidate.overallScore, "NONE", ["Policy threshold met exactly"]);
     } else if (topCandidate.overallScore >= POLICY_THRESHOLDS.REVIEW_REQUIRED) {
-      await recordDecision(runId, record.id, topCandidate.candidateRecordId, "REVIEW_REQUIRED", topCandidate.overallScore, "UNKNOWN", ["Scores are moderate, review required"]);
+      let rootCause = "UNKNOWN";
+      
+      // If the overall score is decent but the entity score is 0, it's highly likely an entity mismatch
+      if (topCandidate.entityScore === 0) {
+        rootCause = "ENTITY_AMBIGUITY";
+      }
+      
+      await recordDecision(runId, record.id, topCandidate.candidateRecordId, "REVIEW_REQUIRED", topCandidate.overallScore, rootCause, ["Scores are moderate, review required"]);
     } else {
-      await recordDecision(runId, record.id, null, "UNRESOLVED", topCandidate.overallScore, "UNKNOWN", ["Scores are too low"]);
+      let rootCause = "UNKNOWN";
+      if (topCandidate.entityScore === 0 && topCandidate.overallScore > 0.4) {
+        rootCause = "ENTITY_AMBIGUITY";
+      }
+      await recordDecision(runId, record.id, null, "UNRESOLVED", topCandidate.overallScore, rootCause, ["Scores are too low"]);
     }
   }
 }

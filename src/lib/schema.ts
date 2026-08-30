@@ -35,7 +35,7 @@ export const AgentDecisionSchema = z.object({
   suggestedAlias: z.object({
     sourceName: z.string().describe("The raw entity name found in the source record"),
     normalizedName: z.string().describe("The canonical/expected entity name it should map to")
-  }).optional().describe("If the root cause is ENTITY_AMBIGUITY, suggest an alias mapping rule for future runs")
+  }).nullable().describe("If the root cause is ENTITY_AMBIGUITY, suggest an alias mapping rule. Otherwise return null.")
 });
 
 export type AgentDecision = z.infer<typeof AgentDecisionSchema>;

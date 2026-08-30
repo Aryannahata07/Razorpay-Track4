@@ -3,8 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 
 export default async function AliasesPage() {
-  const aliases = await prisma.entityAlias.findMany({
+  const allAliases = await prisma.entityAlias.findMany({
     orderBy: { createdAt: "desc" }
+  });
+
+  // Deduplicate aliases for display
+  const seen = new Set();
+  const aliases = allAliases.filter(a => {
+    const key = `${a.alias}|${a.canonicalEntity}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 
   return (

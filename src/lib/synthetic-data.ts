@@ -69,18 +69,29 @@ export function generateSyntheticData(seed: number = 4217, count: number = 250):
   // So we need about count / 2 clusters.
   
   while (records.length < count) {
-    const discrepancyClass = rng.nextItem([
-      "CLASS_A_EXACT",
-      "CLASS_B_ENTITY_VAR",
-      "CLASS_C_DATE_DRIFT",
-      "CLASS_D_REF_VAR",
-      "CLASS_E_PARTIAL",
-      "CLASS_F_SPLIT",
-      "CLASS_G_DUPLICATE",
-      "CLASS_J_CONTRADICTION",
-      "CLASS_K_AMBIGUOUS",
-      "CLASS_L_UNRESOLVED"
-    ]);
+    const rand = rng.next();
+    let discrepancyClass = "CLASS_A_EXACT";
+    
+    // Weight the data for a dramatic demo:
+    // 40% exact matches (to show baseline success)
+    // 40% entity variance (to give plenty of demo targets for the AI)
+    // 20% other complex errors (to show realistic exceptions)
+    if (rand < 0.4) {
+      discrepancyClass = "CLASS_A_EXACT";
+    } else if (rand < 0.8) {
+      discrepancyClass = "CLASS_B_ENTITY_VAR";
+    } else {
+      discrepancyClass = rng.nextItem([
+        "CLASS_C_DATE_DRIFT",
+        "CLASS_D_REF_VAR",
+        "CLASS_E_PARTIAL",
+        "CLASS_F_SPLIT",
+        "CLASS_G_DUPLICATE",
+        "CLASS_J_CONTRADICTION",
+        "CLASS_K_AMBIGUOUS",
+        "CLASS_L_UNRESOLVED"
+      ]);
+    }
 
     const amount = rng.nextInt(1000, 100000) * 100; // in paise
     const company = rng.nextItem(BASE_COMPANIES);
@@ -124,7 +135,18 @@ export function generateSyntheticData(seed: number = 4217, count: number = 250):
       };
       records.push(invoice, payment);
     } else if (discrepancyClass === "CLASS_B_ENTITY_VAR") {
-      const variants = [`${company} Pvt Ltd`, company.toUpperCase(), company.replace(" ", "")];
+      // Map base companies to ONE specific, deterministic alias so the rule memory works perfectly
+      const aliasMap: Record<string, string> = {
+        "Acme Industries": "ACME INC",
+        "Globex Corp": "Globex Corporation",
+        "Soylent Corp": "Soylent",
+        "Initech": "Initech LLC",
+        "Umbrella Corp": "Umbrella",
+        "Stark Industries": "Stark Ind",
+        "Wayne Enterprises": "Wayne Ent",
+        "Massive Dynamic": "Massive Dyn"
+      };
+      
       const payment: SyntheticRecord = {
         id: rng.uuid(),
         sourceType: "PAYMENT",
@@ -132,7 +154,7 @@ export function generateSyntheticData(seed: number = 4217, count: number = 250):
         recordDate: new Date(baseDate.getTime() + 86400000),
         amount,
         currency: "INR",
-        counterpartyName: rng.nextItem(variants),
+        counterpartyName: aliasMap[company] || company,
         reference: invoiceId,
         description: "Payment",
         groundTruthDecision: "MATCH",

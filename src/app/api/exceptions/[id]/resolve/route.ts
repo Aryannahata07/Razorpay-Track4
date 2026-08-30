@@ -39,17 +39,28 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // 3. Create Alias Rule if passed
     if (suggestedAlias) {
-      // Create the alias rule
-      await prisma.entityAlias.create({
-        data: {
+      // Check if this exact alias rule already exists
+      const existing = await prisma.entityAlias.findFirst({
+        where: {
           merchantId: exception.run.merchantId,
           alias: suggestedAlias.sourceName,
-          canonicalEntity: suggestedAlias.normalizedName,
-          confidence: 1.0,
-          source: "HUMAN_APPROVED",
-          approved: true
+          canonicalEntity: suggestedAlias.normalizedName
         }
       });
+
+      if (!existing) {
+        // Create the alias rule
+        await prisma.entityAlias.create({
+          data: {
+            merchantId: exception.run.merchantId,
+            alias: suggestedAlias.sourceName,
+            canonicalEntity: suggestedAlias.normalizedName,
+            confidence: 1.0,
+            source: "HUMAN_APPROVED",
+            approved: true
+          }
+        });
+      }
     }
 
     return NextResponse.json({ success: true });

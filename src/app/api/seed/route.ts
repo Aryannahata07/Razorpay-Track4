@@ -66,8 +66,8 @@ export async function POST(request: Request) {
         });
 
         // Add to evaluation cases
-        // 80% dev / 20% held_out
-        const split = Math.random() > 0.2 ? "development" : "held_out";
+        // Deterministic split: exactly every 5th record is held_out (20%)
+        const split = (recordCount % 5 === 0) ? "held_out" : "development";
         
         await tx.evaluationCase.create({
           data: {

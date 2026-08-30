@@ -16,18 +16,20 @@ export async function POST(request: Request) {
     await prisma.matchCandidate.deleteMany();
     await prisma.normalizedRecord.deleteMany();
     await prisma.sourceRecord.deleteMany();
-    await prisma.reconciliationRun.deleteMany();
-    await prisma.reconciliationRule.deleteMany();
-    await prisma.entityAlias.deleteMany();
-    await prisma.merchant.deleteMany();
+    // Note: We DO NOT delete entityAlias, reconciliationRule, or merchant
+    // This allows the "memory" of the system to persist across test data generations
+    // so the F1 score can improve.
 
-    // 2. Create base Merchant
-    const merchant = await prisma.merchant.create({
-      data: {
-        name: "Demo Merchant Inc.",
-        industry: "Retail",
-      }
-    });
+    // 2. Get or Create base Merchant
+    let merchant = await prisma.merchant.findFirst();
+    if (!merchant) {
+      merchant = await prisma.merchant.create({
+        data: {
+          name: "Demo Merchant Inc.",
+          industry: "Retail",
+        }
+      });
+    }
 
     // 3. Create a Run
     const run = await prisma.reconciliationRun.create({

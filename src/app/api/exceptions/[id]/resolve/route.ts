@@ -9,7 +9,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const exception = await prisma.exception.findUnique({
       where: { id },
-      include: { sourceRecord: true }
+      include: { 
+        sourceRecord: true,
+        run: true 
+      }
     });
 
     if (!exception) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -39,7 +42,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       // Create the alias rule
       await prisma.entityAlias.create({
         data: {
-          merchantId: exception.sourceRecord.merchantId,
+          merchantId: exception.run.merchantId,
           alias: suggestedAlias.sourceName,
           canonicalEntity: suggestedAlias.normalizedName,
           confidence: 1.0,

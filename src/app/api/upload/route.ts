@@ -30,7 +30,6 @@ export async function POST(request: Request) {
 
     const dataToInsert = records.map((r: any) => ({
       runId,
-      merchantId,
       sourceType: r.sourceType || "UNKNOWN",
       externalId: r.externalId,
       recordDate: new Date(r.recordDate || Date.now()),
@@ -38,7 +37,9 @@ export async function POST(request: Request) {
       currency: r.currency || "INR",
       counterpartyName: r.counterpartyName || null,
       reference: r.reference || null,
-      status: "PENDING"
+      description: r.description || null,
+      status: "PENDING",
+      rawPayload: JSON.stringify(r),
     }));
 
     await prisma.sourceRecord.createMany({

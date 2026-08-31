@@ -34,9 +34,9 @@ export async function runDeterministicReconciliation(runId: string) {
       const invNorm = normalizedRecordsData.find(n => n.sourceRecordId === inv.id)!;
       
       let amountScore = 0;
-      if (payNorm.amountMinor === invNorm.amountMinor) amountScore = 1;
-      else if (payNorm.amountMinor < invNorm.amountMinor) amountScore = 0.6; // partial possible
-      else amountScore = 0; // overpayment or mismatch
+      if (payNorm.amountMinor === invNorm.amountMinor) {
+        amountScore = 1;
+      }
 
       let dateScore = 0;
       if (payNorm.normalizedDate && invNorm.normalizedDate) {
@@ -47,10 +47,15 @@ export async function runDeterministicReconciliation(runId: string) {
       }
 
       let referenceScore = 0;
-      // If the payment's normalized reference matches the invoice's ID or reference
-      if (payNorm.normalizedReference && invNorm.normalizedExternalId && 
-         (payNorm.normalizedReference === invNorm.normalizedExternalId || invNorm.normalizedExternalId.includes(payNorm.normalizedReference))) {
-        referenceScore = 1;
+      if (payNorm.normalizedReference && invNorm.normalizedExternalId) {
+        if (payNorm.normalizedReference === invNorm.normalizedExternalId) {
+          referenceScore = 1;
+        } else if (
+          payNorm.normalizedReference.length >= 4 &&
+          invNorm.normalizedExternalId.includes(payNorm.normalizedReference)
+        ) {
+          referenceScore = 0.8;
+        }
       }
 
       let entityScore = 0;

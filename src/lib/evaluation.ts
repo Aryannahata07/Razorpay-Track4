@@ -8,6 +8,9 @@ export type EvaluationMetrics = {
   
   precision: number;
   recall: number;
+  deterministicRecall?: number;
+  aiAssistedPositives?: number;
+  deterministicPositives?: number;
   f1: number;
   autoResolutionRate: number;
   abstentionRate: number;
@@ -56,6 +59,8 @@ export async function evaluateRun(runId: string, split: "development" | "held_ou
   }
 
   let truePositives = 0;
+  let aiAssistedPositives = 0;
+  let deterministicPositives = 0;
   let falsePositives = 0;
   let falseNegatives = 0;
   let trueNegatives = 0;
@@ -84,6 +89,11 @@ export async function evaluateRun(runId: string, split: "development" | "held_ou
     if (evalCase.groundTruthDecision === "MATCH") {
       if (actualStatus === "AUTO_RECONCILED" && predictedMatch === evalCase.groundTruthMatchId) {
         truePositives++;
+        if (decision?.agentUsed) {
+          aiAssistedPositives++;
+        } else {
+          deterministicPositives++;
+        }
       } else if (actualStatus === "AUTO_RECONCILED" && predictedMatch !== evalCase.groundTruthMatchId) {
         // Matched the wrong thing!
         falsePositives++;
@@ -108,6 +118,10 @@ export async function evaluateRun(runId: string, split: "development" | "held_ou
     
   const recall = (truePositives + falseNegatives) > 0
     ? truePositives / (truePositives + falseNegatives)
+    : 0;
+
+  const deterministicRecall = (truePositives + falseNegatives) > 0
+    ? deterministicPositives / (truePositives + falseNegatives)
     : 0;
 
   const f1 = (precision + recall) > 0 
@@ -139,6 +153,9 @@ export async function evaluateRun(runId: string, split: "development" | "held_ou
     unresolved,
     precision,
     recall,
+    deterministicRecall,
+    aiAssistedPositives,
+    deterministicPositives,
     f1,
     autoResolutionRate,
     abstentionRate,
@@ -148,7 +165,7 @@ export async function evaluateRun(runId: string, split: "development" | "held_ou
   };
 
   // Optionally save back to run if this is the 'all' split or main evaluation
-  if (split === "held_out") {
+  if (split === "held_out" || split === "all") {
     await prisma.reconciliationRun.update({
       where: { id: runId },
       data: {

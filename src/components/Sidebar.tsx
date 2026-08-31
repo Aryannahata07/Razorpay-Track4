@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, AlertCircle, CheckCircle, Database, Settings, BarChart2 } from "lucide-react";
+import { Activity, AlertCircle, CheckCircle, Database, ClipboardList, BarChart2, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const routes = [
   { href: "/", label: "Overview", icon: BarChart2 },
   { href: "/exceptions", label: "Exceptions", icon: AlertCircle },
   { href: "/transactions", label: "Transactions", icon: Activity },
+  { href: "/evaluation", label: "Evaluation", icon: FlaskConical },
+  { href: "/audit", label: "Audit Trail", icon: ClipboardList },
   { href: "/aliases", label: "Rule Memory", icon: CheckCircle },
   { href: "/sources", label: "Data Sources", icon: Database },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {

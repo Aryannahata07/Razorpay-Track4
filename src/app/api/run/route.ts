@@ -4,6 +4,8 @@ import { runDeterministicReconciliation } from "@/lib/reconciliation";
 import { runPolicyEngine } from "@/lib/policy";
 import { evaluateRun } from "@/lib/evaluation";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const { runId } = await request.json();

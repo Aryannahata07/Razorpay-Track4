@@ -10,14 +10,37 @@ export async function runDeterministicReconciliation(runId: string) {
   
   // 1. Fetch pending records
   const records = await prisma.sourceRecord.findMany({
-    where: { runId, status: "PENDING" }
+    where: { runId }
+  });
+
+  const recordIds = records.map(r => r.id);
+
+  // Clean up any previous candidates or normalized records for this run to ensure idempotency
+  await prisma.matchCandidate.deleteMany({ where: { runId } });
+  await prisma.normalizedRecord.deleteMany({
+    where: { sourceRecordId: { in: recordIds } }
   });
 
   // 2. Normalize and save to DB
   const normalizedRecordsData = await processNormalization(records, run?.merchantId);
-  await prisma.normalizedRecord.createMany({
-    data: normalizedRecordsData
-  });
+  
+  // Deduplicate by sourceRecordId to guarantee zero unique constraint collisions
+  const uniqueNormsMap = new Map<string, typeof normalizedRecordsData[0]>();
+  for (const n of normalizedRecordsData) {
+    uniqueNormsMap.set(n.sourceRecordId, n);
+  }
+  const uniqueNorms = Array.from(uniqueNormsMap.values());
+
+  if (uniqueNorms.length > 0) {
+    // Delete any existing normalized records for these source records
+    await prisma.normalizedRecord.deleteMany({
+      where: { sourceRecordId: { in: uniqueNorms.map(n => n.sourceRecordId) } }
+    });
+    
+    await prisma.normalizedRecord.createMany({
+      data: uniqueNorms
+    });
+  }
 
   // 3. Generate Candidates (For this prototype, we map payments to invoices)
   const invoices = records.filter(r => r.sourceType === "INVOICE");

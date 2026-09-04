@@ -36,9 +36,25 @@ function checkFinancialInvariants(
 }
 
 export async function runPolicyEngine(runId: string) {
+  // Clean up previous decisions, exceptions, and agent runs for idempotency
+  const runExceptions = await prisma.exception.findMany({
+    where: { runId },
+    select: { id: true }
+  });
+  const exceptionIds = runExceptions.map(e => e.id);
+  if (exceptionIds.length > 0) {
+    await prisma.agentRun.deleteMany({
+      where: { exceptionId: { in: exceptionIds } }
+    });
+  }
+
+  await prisma.exception.deleteMany({ where: { runId } });
+  await prisma.reconciliationDecision.deleteMany({ where: { runId } });
+  await prisma.auditEvent.deleteMany({ where: { runId } });
+
   // Fetch pending records that have candidates
   const records = await prisma.sourceRecord.findMany({
-    where: { runId, status: "PENDING", sourceType: "PAYMENT" },
+    where: { runId, sourceType: "PAYMENT" },
     include: {
       candidatesSource: {
         orderBy: { overallScore: 'desc' },

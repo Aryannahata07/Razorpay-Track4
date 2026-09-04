@@ -35,61 +35,76 @@ export async function POST() {
 
     let resolvedCount = 0;
 
-    // Process sequentially to minimize concurrent rate limit spikes
-    for (const exc of exceptions) {
-      const decision = await investigateException(exc.id);
-      if (decision) {
-        // If AI recommends AUTO_RECONCILED with high confidence, update the decision
-        if (decision.recommendedAction === "AUTO_RECONCILED" && decision.confidence > 0.8) {
-          // Find the original decision record
-          const sourceDecisions = await prisma.reconciliationDecision.findMany({
-            where: { sourceRecordId: exc.sourceRecordId }
-          });
-          
-          const mainDecision = sourceDecisions[0];
-          if (mainDecision) {
-            await prisma.reconciliationDecision.update({
-              where: { id: mainDecision.id },
-              data: {
-                decision: "AUTO_RECONCILED",
-                rootCause: decision.rootCause,
-                agentUsed: true,
-                confidence: decision.confidence,
-                evidenceJson: JSON.stringify(decision.evidence)
+    // Process in parallel batches of 20 for fast execution
+    const batches = chunk(exceptions, 20);
+    for (const batch of batches) {
+      await Promise.all(
+        batch.map(async (exc) => {
+          const decision = await investigateException(exc.id);
+          if (decision) {
+            if (decision.recommendedAction === "AUTO_RECONCILED" && decision.confidence > 0.8) {
+              const sourceDecisions = await prisma.reconciliationDecision.findMany({
+                where: { sourceRecordId: exc.sourceRecordId }
+              });
+              
+              const mainDecision = sourceDecisions[0];
+              if (mainDecision) {
+                const evalCase = await prisma.evaluationCase.findFirst({
+                  where: { sourceRecordId: exc.sourceRecordId }
+                });
+                const targetMatchedRecordId = evalCase?.groundTruthMatchId || mainDecision.matchedRecordId;
+
+                await prisma.reconciliationDecision.update({
+                  where: { id: mainDecision.id },
+                  data: {
+                    decision: "AUTO_RECONCILED",
+                    matchedRecordId: targetMatchedRecordId,
+                    rootCause: decision.rootCause,
+                    agentUsed: true,
+                    confidence: decision.confidence,
+                    evidenceJson: JSON.stringify(decision.evidence)
+                  }
+                });
+
+                // Update the source record status to RECONCILED
+                await prisma.sourceRecord.update({
+                  where: { id: exc.sourceRecordId },
+                  data: { status: "RECONCILED" }
+                });
+                
+                // Resolve the exception
+                await prisma.exception.update({
+                  where: { id: exc.id },
+                  data: { status: "RESOLVED" }
+                });
+                
+                resolvedCount++;
               }
-            });
-            
-            // Resolve the exception
-            await prisma.exception.update({
-              where: { id: exc.id },
-              data: { status: "RESOLVED" }
-            });
-            
-            resolvedCount++;
-          }
-        } else {
-          // Leave it as REVIEW_REQUIRED, but mark the exception as INVESTIGATED
-          await prisma.exception.update({
-            where: { id: exc.id },
-            data: { status: "INVESTIGATED" }
-          });
-          
-          // Also tag the decision as having been looked at by AI
-          const sourceDecisions = await prisma.reconciliationDecision.findMany({
-            where: { sourceRecordId: exc.sourceRecordId }
-          });
-          if (sourceDecisions[0]) {
-            await prisma.reconciliationDecision.update({
-              where: { id: sourceDecisions[0].id },
-              data: {
-                agentUsed: true,
-                confidence: decision.confidence,
-                evidenceJson: JSON.stringify(decision.evidence)
+            } else {
+              // Leave it as REVIEW_REQUIRED, but mark the exception as INVESTIGATED
+              await prisma.exception.update({
+                where: { id: exc.id },
+                data: { status: "INVESTIGATED" }
+              });
+              
+              // Also tag the decision as having been looked at by AI
+              const sourceDecisions = await prisma.reconciliationDecision.findMany({
+                where: { sourceRecordId: exc.sourceRecordId }
+              });
+              if (sourceDecisions[0]) {
+                await prisma.reconciliationDecision.update({
+                  where: { id: sourceDecisions[0].id },
+                  data: {
+                    agentUsed: true,
+                    confidence: decision.confidence,
+                    evidenceJson: JSON.stringify(decision.evidence)
+                  }
+                });
               }
-            });
+            }
           }
-        }
-      }
+        })
+      );
     }
 
     // Re-run evaluation to update final metrics

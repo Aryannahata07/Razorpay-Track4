@@ -65,20 +65,21 @@ export async function POST(request: Request) {
           }
         });
 
-        // Add to evaluation cases
-        // Deterministic split: exactly every 5th record is held_out (20%)
-        const split = (recordCount % 5 === 0) ? "held_out" : "development";
-        
-        await tx.evaluationCase.create({
-          data: {
-            runId: run.id,
-            sourceRecordId: sourceRec.id,
-            groundTruthDecision: rec.groundTruthDecision,
-            groundTruthMatchId: rec.groundTruthMatchId,
-            groundTruthRootCause: rec.groundTruthRootCause,
-            datasetSplit: split
-          }
-        });
+        // Add to evaluation cases (only PAYMENT records undergo reconciliation against ledger invoices)
+        if (rec.sourceType === "PAYMENT") {
+          const split = (recordCount % 5 === 0) ? "held_out" : "development";
+          
+          await tx.evaluationCase.create({
+            data: {
+              runId: run.id,
+              sourceRecordId: sourceRec.id,
+              groundTruthDecision: rec.groundTruthDecision,
+              groundTruthMatchId: rec.groundTruthMatchId,
+              groundTruthRootCause: rec.groundTruthRootCause,
+              datasetSplit: split
+            }
+          });
+        }
         recordCount++;
       }
     });

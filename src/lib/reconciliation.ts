@@ -15,17 +15,15 @@ export async function runDeterministicReconciliation(runId: string) {
 
   // 2. Normalize and save to DB
   const normalizedRecordsData = await processNormalization(records, run?.merchantId);
-  for (const norm of normalizedRecordsData) {
-    await prisma.normalizedRecord.upsert({
-      where: { sourceRecordId: norm.sourceRecordId },
-      update: norm,
-      create: norm
-    });
-  }
+  await prisma.normalizedRecord.createMany({
+    data: normalizedRecordsData
+  });
 
   // 3. Generate Candidates (For this prototype, we map payments to invoices)
   const invoices = records.filter(r => r.sourceType === "INVOICE");
   const payments = records.filter(r => r.sourceType === "PAYMENT");
+
+  const matchCandidatesToInsert: any[] = [];
 
   for (const payment of payments) {
     const payNorm = normalizedRecordsData.find(n => n.sourceRecordId === payment.id)!;
@@ -87,25 +85,29 @@ export async function runDeterministicReconciliation(runId: string) {
     // 4. Filter plausible candidates (score > 0.4)
     candidates = candidates.filter(c => c.overallScore > 0.4).sort((a, b) => b.overallScore - a.overallScore);
 
-    // 5. Save candidates
+    // 5. Accumulate candidates
     let rank = 1;
     for (const c of candidates) {
-      await prisma.matchCandidate.create({
-        data: {
-          runId,
-          sourceRecordId: payment.id,
-          candidateRecordId: c.candidateRecordId,
-          amountScore: c.amountScore,
-          dateScore: c.dateScore,
-          referenceScore: c.referenceScore,
-          entityScore: c.entityScore,
-          semanticScore: c.semanticScore,
-          contradictionScore: c.contradictionScore,
-          overallScore: c.overallScore,
-          rank: rank++
-        }
+      matchCandidatesToInsert.push({
+        runId,
+        sourceRecordId: payment.id,
+        candidateRecordId: c.candidateRecordId,
+        amountScore: c.amountScore,
+        dateScore: c.dateScore,
+        referenceScore: c.referenceScore,
+        entityScore: c.entityScore,
+        semanticScore: c.semanticScore,
+        contradictionScore: c.contradictionScore,
+        overallScore: c.overallScore,
+        rank: rank++
       });
     }
+  }
+
+  if (matchCandidatesToInsert.length > 0) {
+    await prisma.matchCandidate.createMany({
+      data: matchCandidatesToInsert
+    });
   }
 
   return true;

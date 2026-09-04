@@ -20,7 +20,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // 1. Mark Exception as RESOLVED
     await prisma.exception.update({
       where: { id },
-      data: { status: "RESOLVED" }
+      data: { status: "RESOLVED", resolvedAt: new Date() }
+    });
+
+    // Also update the source record and decision
+    const decisions = await prisma.reconciliationDecision.findMany({
+      where: { sourceRecordId: exception.sourceRecordId }
+    });
+    if (decisions[0]) {
+      await prisma.reconciliationDecision.update({
+        where: { id: decisions[0].id },
+        data: {
+          decision: "AUTO_RECONCILED",
+          confidence: 1.0,
+          decisionReason: "Human controller manual override approval"
+        }
+      });
+    }
+
+    await prisma.sourceRecord.update({
+      where: { id: exception.sourceRecordId },
+      data: { status: "RECONCILED" }
     });
 
     // 2. Add an Audit Event

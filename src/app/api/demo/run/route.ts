@@ -59,17 +59,19 @@ export async function POST() {
           },
         });
 
-        const split = recordCount % 5 === 0 ? "held_out" : "development";
-        await tx.evaluationCase.create({
-          data: {
-            runId: run.id,
-            sourceRecordId: sourceRec.id,
-            groundTruthDecision: rec.groundTruthDecision,
-            groundTruthMatchId: rec.groundTruthMatchId,
-            groundTruthRootCause: rec.groundTruthRootCause,
-            datasetSplit: split,
-          },
-        });
+        if (rec.sourceType === "PAYMENT") {
+          const split = recordCount % 5 === 0 ? "held_out" : "development";
+          await tx.evaluationCase.create({
+            data: {
+              runId: run.id,
+              sourceRecordId: sourceRec.id,
+              groundTruthDecision: rec.groundTruthDecision,
+              groundTruthMatchId: rec.groundTruthMatchId,
+              groundTruthRootCause: rec.groundTruthRootCause,
+              datasetSplit: split,
+            },
+          });
+        }
         recordCount++;
       }
     });

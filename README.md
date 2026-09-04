@@ -54,47 +54,50 @@ Evaluated on a rigorous synthetic benchmark of **250 financial records** spannin
 ## 🏛️ System Architecture
 
 ```mermaid
-graph TD
+flowchart TD
     %% Styling
-    classDef client fill:#0b1120,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef client fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
     classDef engine fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#f8fafc;
     classDef policy fill:#14532d,stroke:#4ade80,stroke-width:2px,color:#f8fafc;
     classDef ai fill:#581c87,stroke:#c084fc,stroke-width:2px,color:#f8fafc;
     classDef db fill:#18181b,stroke:#a1a1aa,stroke-width:2px,color:#f8fafc;
 
-    subgraph INGESTION ["1. Ingestion & Preprocessing"]
-        RAW[Raw Source Records<br/>Invoices, Payments, Settlements]:::client
-        NORM[Canonical Normalizer<br/>Date Stripping, Clean Text, Minor Units]:::engine
+    subgraph S1 ["1. Ingestion & Preprocessing"]
+        RAW["Raw Source Records (Invoices & Payments)"]:::client
+        NORM["Canonical Normalizer (Dates, References, Paise)"]:::engine
     end
 
-    subgraph DETERMINISTIC ["2. Deterministic Matching Core"]
-        CAND[Candidate Scorer<br/>Amount 40% | Ref 30% | Entity 20% | Date 10%]:::engine
-        POL{Financial Invariant Gate<br/>• Ratio Tolerance Check<br/>• 1-to-1 Duplicate Lock<br/>• Score Threshold >= 0.85}:::policy
+    subgraph S2 ["2. Deterministic Matching Core"]
+        CAND["Candidate Scorer (Amount 40%, Ref 30%, Entity 20%, Date 10%)"]:::engine
+        POL{"Financial Invariant Gate (1:1 Ratio Check & Score Thresholds)"}:::policy
     end
 
-    subgraph STORAGE ["3. Ledger & State"]
-        DB[(Prisma Ledger<br/>SQLite / Postgres)]:::db
+    subgraph S3 ["3. Ledger & Storage"]
+        DB[("Prisma Database (Financial Ledger)")]:::db
     end
 
-    subgraph EXCEPTION_AI ["4. Autonomous AI Controller"]
-        EXC_QUEUE[Exception Workbench<br/>Ambiguous / Unresolved Records]:::client
-        AGENT[AI Finance Agent<br/>Groq LLaMA-3 / Gemini Pro]:::ai
-        REASON[Structured Output Engine<br/>Root Cause, Confidence, Evidence JSON]:::ai
+    subgraph S4 ["4. Autonomous AI Controller"]
+        EXC_QUEUE["Exception Workbench (Ambiguous Records)"]:::client
+        AGENT["AI Finance Agent (Groq LLaMA-3 / Gemini)"]:::ai
+        REASON["Structured Output Engine (Root Cause & Evidence JSON)"]:::ai
     end
 
-    subgraph MEMORY ["5. Human-in-the-Loop & Rule Memory"]
-        HUMAN[Human Controller Review]:::client
-        ALIAS[Entity Alias & Rule Learning<br/>'ACME INC' -> 'Acme Industries']:::policy
+    subgraph S5 ["5. Rule Memory & Human Loop"]
+        HUMAN["Human Controller Review"]:::client
+        ALIAS["Entity Alias Learning (Rule Persistence)"]:::policy
     end
 
-    RAW --> NORM --> CAND --> POL
+    RAW --> NORM
+    NORM --> CAND
+    CAND --> POL
+    
     POL -->|Passed: Score >= 0.85| DB
-    POL -->|Failed / Ambiguous| EXC_QUEUE
+    POL -->|Review Required| EXC_QUEUE
 
-    EXC_QUEUE -->|Batch Resolution Request| AGENT
+    EXC_QUEUE -->|Batch Resolution| AGENT
     AGENT --> REASON
-    REASON -->|Confidence > 0.85 + Valid Evidence| DB
-    REASON -->|Adversarial / Low Confidence| HUMAN
+    REASON -->|Confidence > 0.85| DB
+    REASON -->|Adversarial or Ambiguous| HUMAN
     REASON -.->|Suggested Alias Rule| ALIAS
     ALIAS -.->|Persists to Engine| NORM
 ```
@@ -252,7 +255,4 @@ Razorpay-Track4/
 - **Enterprise-Ready UI:** Fully responsive, dark-mode ready dashboard with real-time confusion matrices and human-in-the-loop governance.
 
 ---
-<div align="center">
-Built with ❤️ for the Razorpay Hackathon (Track 4: AI Finance Controller).
-</div>
 

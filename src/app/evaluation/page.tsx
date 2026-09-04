@@ -43,7 +43,7 @@ export default async function EvaluationPage() {
 
     if (predicted === "AUTO_RECONCILED" && truth === "MATCH") {
       tp++;
-      if (decision?.aiAssisted) aiTp++;
+      if (decision?.agentUsed) aiTp++;
       else detTp++;
     }
     else if (predicted === "AUTO_RECONCILED" && truth === "UNRESOLVED") fp++;
